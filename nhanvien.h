@@ -23,6 +23,8 @@ public:
     string congViec;
     int namSinh;
     float hsLuong;
+    static char sortBy;
+    static bool acs;
 
     NhanVien(){
         id = 0;
@@ -40,11 +42,61 @@ public:
         hsLuong = _hsLuong;
     }
 
-    bool operator<(NhanVien other){
+    static void setComp(char by = 'i', bool a = true){
+        sortBy = by;
+        acs = a;
+    }
+
+    static bool comp(const NhanVien& a, const NhanVien& b){
+        bool c = false;
+        switch(sortBy){
+            case 'i':
+                c = a.id < b.id;
+                break;
+            case 'h':
+                c = a.hoTen < b.hoTen;
+                break;
+            case 'c':
+                c = a.congViec < b.congViec;
+                break;
+            case 'n':
+                c = a.namSinh < b.namSinh;
+                break;
+            case 'l':
+                c = a.hsLuong < b.hsLuong;
+                break;                
+        }
+
+        /*
+        a: sort by acensing
+        c: less than compare
+            a c result
+            1 1   1
+            1 0   0
+            0 1   0
+            0 0   1
+            => use nxor
+        */
+        return !(NhanVien::acs ^ c);
+    }
+
+    bool operator<(const NhanVien& other){
         return id < other.id;
     }
 
+    friend ostream& operator<<(ostream& os, NhanVien& nv){
+        os << "Id: " << nv.id << endl;
+        os << "Ho va Ten: " << nv.hoTen << endl;
+        os << "Cong viec: " << nv.congViec << endl;
+        os << "Nam sinh: " << nv.namSinh << endl;
+        os << "He so luong: " << nv.hsLuong << endl;
+        return os;
+    }
+
 };
+
+bool NhanVien::acs = true;
+char NhanVien::sortBy = 'i';
 
 class QuanLyNhanVien{
 public:
@@ -55,7 +107,7 @@ public:
         dataPath = path;
         std::ifstream data(dataPath);
         if(data.is_open()){
-            int cnt;
+            int cnt = 0;
             data >> cnt;
             while (cnt--){
                 NhanVien nv;
@@ -69,10 +121,19 @@ public:
             }
         }
         data.close();
+        NhanVien::setComp();
     }
 
     void themNhanVien(NhanVien nv){
         nhanVien.push_back(nv);
+    }
+
+    void xoaNhanVien(int index){
+        nhanVien.erase(nhanVien.begin() + index);
+    }
+
+    void suaNhanVien(int stt, NhanVien nv){
+        nhanVien[stt-1] = nv;
     }
 
     void writeData(){
@@ -92,8 +153,14 @@ public:
 
     void rmrf(){
         std::ofstream data(dataPath);
+        nhanVien.erase(nhanVien.begin(), nhanVien.end());
         data << 0;
         data.close();
+    }
+
+    void sapxep(char by = 'i', bool a = true){
+        NhanVien::setComp(by, a);
+        std::sort(nhanVien.begin(), nhanVien.end(), NhanVien::comp);
     }
 
     friend ostream& operator<<(ostream& os, const QuanLyNhanVien& qlnv){
@@ -101,7 +168,7 @@ public:
             os << "Hien tai khong co nhan vien\n";
             return os;
         }
-
+        // size of header filed
         int widths[] = {3,2,9,9,8,8};
         widths[0] = max(widths[0],(int) log10(qlnv.nhanVien.size()) + 1);
         
@@ -131,7 +198,7 @@ public:
         os << "|";
         os << setw(widths[4]) << left << "Nam Sinh";
         os << "|";
-        os << setw(widths[5]) << left << std::fixed << std::setprecision(1) << "HS Luong" << endl;
+        os << setw(widths[5]) << left << "HS Luong" << endl;
         os << string(sum, '-') << endl;
 
         int cnt = 0;
@@ -146,7 +213,7 @@ public:
             os << "|";
             os << setw(widths[4]) << left << nv.namSinh;
             os << "|";
-            os << setw(widths[5]) << left << nv.hsLuong << endl;
+            os << setw(widths[5]) << left << std::fixed << std::setprecision(1) << nv.hsLuong << endl;
         }
 
         return os;
